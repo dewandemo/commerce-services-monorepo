@@ -1,0 +1,68 @@
+pipeline:
+  name: commerce-services-ci
+  identifier: commerce_services_ci
+  orgIdentifier: default
+  projectIdentifier: commerce_services
+  tags: {}
+  properties:
+    ci:
+      codebase:
+        connectorRef: <+input>
+        repoName: commerce-services-monorepo
+        build: <+input>
+  variables:
+    - name: docker_connector
+      type: String
+      description: Docker Hub connector authenticated as dewandemo
+      value: dockerhub_dewandemo
+    - name: docker_repo
+      type: String
+      description: Docker Hub repository receiving the service images
+      value: dewandemo/commerce-services-monorepo
+  stages:
+    - stage:
+        name: Build Test and Push
+        identifier: build_test_and_push
+        type: CI
+        spec:
+          cloneCodebase: true
+          platform:
+            os: Linux
+            arch: Amd64
+          runtime:
+            type: Cloud
+            spec: {}
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  name: Maven Verify
+                  identifier: maven_verify
+                  spec:
+                    image: maven:3.9-eclipse-temurin-17
+                    shell: Sh
+                    command: mvn --batch-mode clean verify
+                    reports:
+                      type: JUnit
+                      spec:
+                        paths:
+                          - "**/target/surefire-reports/TEST-*.xml"
+              - step:
+                  type: BuildAndPushDockerRegistry
+                  name: Build and Push Image
+                  identifier: build_and_push_image
+                  strategy:
+                    matrix:
+                      service:
+                        - catalog-service
+                        - orders-service
+                  spec:
+                    connectorRef: <+pipeline.variables.docker_connector>
+                    repo: <+pipeline.variables.docker_repo>
+                    tags:
+                      - <+matrix.service>-<+pipeline.sequenceId>
+                      - <+matrix.service>-latest
+                    dockerfile: .harness/Dockerfile
+                    context: .
+                    buildArgs:
+                      SERVICE: <+matrix.service>
