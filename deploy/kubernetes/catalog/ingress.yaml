@@ -1,16 +1,18 @@
-apiVersion: networking.k8s.io/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: catalog
   namespace: demo
-  annotations:
-    kubernetes.io/ingress.class: nginx
 spec:
+  ingressClassName: nginx
   rules:
     - host: catalog.demo.local
       http:
         paths:
           - path: /catalog
+            pathType: Prefix
             backend:
-              serviceName: catalog-service
-              servicePort: 8080
+              service:
+                name: catalog-service
+                port:
+                  number: 8080
