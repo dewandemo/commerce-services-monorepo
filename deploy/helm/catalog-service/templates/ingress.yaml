@@ -1,5 +1,5 @@
 {{- if .Values.ingress.enabled }}
-apiVersion: networking.k8s.io/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ include "catalog-service.fullname" . }}
@@ -19,7 +19,10 @@ spec:
       http:
         paths:
           - path: {{ .Values.ingress.path | quote }}
+            pathType: Prefix
             backend:
-              serviceName: {{ include "catalog-service.fullname" . }}
-              servicePort: {{ .Values.service.port }}
+              service:
+                name: {{ include "catalog-service.fullname" . }}
+                port:
+                  number: {{ .Values.service.port }}
 {{- end }}
